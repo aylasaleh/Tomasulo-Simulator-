@@ -13,12 +13,12 @@ class Instruction:
     target: Optional[int] = None
     raw_text: str = ""
 
-    issued_cycle: Optional[int] = None
-    start_cycle: Optional[int] = None
-    finish_cycle: Optional[int] = None
-    write_cycle: Optional[int] = None
-    completed: bool = False
-    flushed: bool = False
+    issued_cycle: List[Optional[int]] = field(default_factory=list)
+    start_cycle: List[Optional[int]] = field(default_factory=list)
+    finish_cycle: List[Optional[int]] = field(default_factory=list)
+    write_cycle: List[Optional[int]] = field(default_factory=list)
+    completed: List[bool] = field(default_factory=list)
+    flushed: List[bool] = field(default_factory=list)
 
     @property
     def is_branch(self) -> bool:
