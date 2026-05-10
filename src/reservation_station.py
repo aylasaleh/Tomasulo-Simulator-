@@ -117,31 +117,3 @@ class ReservationStations:
                 return station
 
         return None
-
-
-    def flush_younger_than(
-        self,
-        branch_pc: int
-    ):
-        for entries in self.stations.values():
-
-            for station in entries:
-
-                if (station.busy and station.inst_pc is not None and station.inst_pc > branch_pc):
-                    station.flush()
-        return
-
-    def print_status(self):
-
-        for unit_type, entries in self.stations.items():
-
-            print(f"\n=== {unit_type} ===")
-
-            for rs in entries:
-
-                print(
-                    f"{rs.name:10} | "
-                    f"Busy={rs.busy} | "
-                    f"PC={rs.inst_pc} | "
-                    f"Op={rs.op}"
-                )

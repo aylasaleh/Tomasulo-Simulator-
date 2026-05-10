@@ -219,9 +219,11 @@ class Simulator:
         return any(slot.busy and slot.instruction is instr for slot in self.get_all_slots())
 
     def is_memory_slot(self, slot: ReservationStationSlot) -> bool:
-        return bool(slot.instruction and slot.instruction.is_memory)
+        return slot.busy and bool(slot.instruction and slot.instruction.is_memory)
 
     def _older_busy_slots(self, slot: ReservationStationSlot) -> Iterator[ReservationStationSlot]:
+        if not slot.busy or slot.inst_pc is None or slot.instruction is None:
+            return
         for other in self.get_all_slots():
             if other is slot or not other.busy or other.inst_pc is None or other.instruction is None:
                 continue
@@ -230,12 +232,14 @@ class Simulator:
             yield other
 
     def is_store_slot(self, slot: ReservationStationSlot) -> bool:
-        return bool(slot.instruction and slot.instruction.is_store)
+        return slot.busy and bool(slot.instruction and slot.instruction.is_store)
 
     def is_control_slot(self, slot: ReservationStationSlot) -> bool:
-        return bool(slot.instruction and slot.instruction.is_control)
+        return slot.busy and bool(slot.instruction and slot.instruction.is_control)
 
     def populate_operand_tags(self, slot: ReservationStationSlot) -> None:
+        if not slot.busy or slot.instruction is None:
+            return
         instr = slot.instruction
         if instr.src1:
             producer = self.registers.current_producer(instr.src1)
@@ -251,6 +255,8 @@ class Simulator:
                 slot.Qk = producer
 
     def can_compute_address(self, slot: ReservationStationSlot) -> bool:
+        if not slot.busy or slot.instruction is None:
+            return False
         if not self.is_memory_slot(slot):
             return False
         if slot.Qj is not None:
@@ -261,19 +267,27 @@ class Simulator:
         return True
 
     def has_older_store(self, slot: ReservationStationSlot) -> bool:
+        if not slot.busy or slot.instruction is None:
+            return False
         if not self.is_memory_slot(slot):
             return False
         return any(other.instruction.is_store for other in self._older_busy_slots(slot))
 
     def has_unresolved_older_branch(self, slot: ReservationStationSlot) -> bool:
+        if not slot.busy or slot.instruction is None:
+            return False
         return any(self.is_control_slot(other) for other in self._older_busy_slots(slot))
 
     def compute_effective_address(self, slot: ReservationStationSlot) -> None:
+        if not slot.busy or slot.instruction is None:
+            return
         base = slot.Vj if slot.Vj is not None else 0
         slot.address = base + (slot.instruction.immediate or 0)
         slot.value = slot.address
 
     def can_start_memory_operation(self, slot: ReservationStationSlot) -> bool:
+        if not slot.busy or slot.instruction is None:
+            return False
         if slot.address is None:
             return False
         if self.is_store_slot(slot):
@@ -317,7 +331,6 @@ class Simulator:
 
     def cleanup_slot(self, slot: ReservationStationSlot) -> None:
         slot.busy = False
-
 
     def broadcast_result(self, FU_name: Optional[str], value: int) -> None:
         if FU_name is None:
