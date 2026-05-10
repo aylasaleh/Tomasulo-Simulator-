@@ -47,6 +47,7 @@ def parse_instruction_line(pc: int, text: str) -> Instruction:
         if len(tokens) != 2:
             raise ValueError(f"CALL requires 1 operand at PC={pc}")
         instruction.target = parse_int(tokens[1])
+        instruction.dest = "r1"
         return instruction
 
     if mnemonic == "beq":

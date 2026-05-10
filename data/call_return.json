@@ -1,0 +1,12 @@
+{
+  "instructions": [
+    {"pc": 1, "text": "add r1,r0,r0"},
+    {"pc": 2, "text": "call 5"},
+    {"pc": 3, "text": "call 8"},
+    {"pc": 4, "text": "add r2,r1,r1"},
+    {"pc": 5, "text": "add r4,r3,r3"},
+    {"pc": 6, "text": "ret"},
+    {"pc": 7, "text": "add r3,r1,r1"},
+    {"pc": 8, "text": "add r5,r2,r2"}
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "instructions": [
+    {"pc": 1, "text": "add r1,r0,r0"},
+    {"pc": 2, "text": "add r2,r0,r1"},
+    {"pc": 3, "text": "store r2,0(r1)"},
+    {"pc": 4, "text": "load r3,0(r1)"},
+    {"pc": 5, "text": "load r4,4(r1)"}
+  ],
+  "memory": [
+    {"address": 4, "value": 1234}
+  ]
+}

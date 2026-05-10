@@ -18,33 +18,33 @@ class RegisterFile:
         stack = self.producer_stack[self._index(register)]
         return stack[-1] if stack else None
 
-    def write(self, register: str, value: int, tag: str) -> None:
+    def write(self, register: str, value: int, FU: str) -> None:
         if register == "r0":
             return
         idx = self._index(register)
         current = self.current_producer(register)
-        if current == tag:
+        if current == FU:
             self.values[idx] = value
-        self.remove_pending_producer(register, tag)
+        self.remove_pending_producer(register, FU)
 
-    def add_pending_producer(self, register: str, tag: str) -> None:
+    def add_pending_producer(self, register: str, FU: str) -> None:
         if register == "r0":
             return
         stack = self.producer_stack[self._index(register)]
-        stack.append(tag)
+        stack.append(FU)
 
-    def remove_pending_producer(self, register: str, tag: str) -> None:
+    def remove_pending_producer(self, register: str, FU: str) -> None:
         if register == "r0":
             return
         stack = self.producer_stack[self._index(register)]
-        if tag in stack:
-            stack.remove(tag)
+        if FU in stack:
+            stack.remove(FU)
 
     def is_ready(self, register: str) -> bool:
         return self.current_producer(register) is None
 
-    def is_producer_pending(self, register: str, tag: str) -> bool:
+    def is_producer_pending(self, register: str, FU: str) -> bool:
         if register == "r0":
             return False
         stack = self.producer_stack[self._index(register)]
-        return tag in stack
+        return FU in stack

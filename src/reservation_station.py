@@ -12,6 +12,7 @@ class ReservationStationSlot:
 
     #ISSUE EXECUTE WRITE
     stage: Optional[str] = None
+    value: Optional[int] = None
 
     rem_cycles: Optional[int] = None
 
@@ -30,28 +31,17 @@ class ReservationStationSlot:
     address: Optional[int] = None
     immediate: Optional[int] = None
     
-    # final output 
-    value: Optional[int] = None
-
     # Full instruction text
     instruction: Optional[str] = None
+    
+    # Functional unit type
+    fu_type: Optional[str] = None
+    
+    # Address computation cycles remaining (for loads/stores)
+    addr_comp_cycles_remaining: Optional[int] = None
 
     def flush(self):
         self.busy = False
-        self.op = None
-
-        self.instruction_pc = None
-
-        self.Vj = None
-        self.Vk = None
-
-        self.Qj = None
-        self.Qk = None
-
-        self.address = None
-        self.immediate = None
-
-        self.instruction = None
 
 
 class ReservationStations:
@@ -137,7 +127,7 @@ class ReservationStations:
 
             for station in entries:
 
-                if (station.busy and station.inst_pc is not None and station.int_pc > branch_pc):
+                if (station.busy and station.inst_pc is not None and station.inst_pc > branch_pc):
                     station.flush()
         return
 
@@ -152,6 +142,6 @@ class ReservationStations:
                 print(
                     f"{rs.name:10} | "
                     f"Busy={rs.busy} | "
-                    f"PC={rs.instruction_pc} | "
+                    f"PC={rs.inst_pc} | "
                     f"Op={rs.op}"
                 )

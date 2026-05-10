@@ -1,0 +1,16 @@
+{
+  "instructions": [
+    {"pc": 1, "text": "add r2,r0,r1"},
+    {"pc": 2, "text": "beq r2,r3,5"},
+    {"pc": 3, "text": "mul r4,r2,r5"},
+    {"pc": 4, "text": "sub r6,r4,r7"},
+    {"pc": 5, "text": "call 7"},
+    {"pc": 6, "text": "ret"},
+    {"pc": 7, "text": "load r1,0(r2)"},
+    {"pc": 8, "text": "store r1,4(r2)"}
+  ],
+  "memory": [
+    {"address": 0, "value": 100},
+    {"address": 4, "value": 200}
+  ]
+}

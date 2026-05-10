@@ -1,0 +1,21 @@
+{
+  "instructions": [
+    {"pc": 1, "text": "load r1,0(r0)"},
+    {"pc": 2, "text": "add r2,r0,r0"},
+    {"pc": 3, "text": "load r3,4(r0)"},
+    {"pc": 4, "text": "add r4,r0,r0"},
+    {"pc": 5, "text": "beq r1,r4,13"},
+    {"pc": 6, "text": "add r2,r2,r1"},
+    {"pc": 7, "text": "add r6,r2,r0"},
+    {"pc": 8, "text": "sub r1,r1,r3"},
+    {"pc": 9, "text": "add r2,r0,r1"},
+    {"pc": 10, "text": "beq r0,r0,5"},
+    {"pc": 11, "text": "add r5,r2,r0"},
+    {"pc": 12, "text": "add r7,r0,r0"},
+    {"pc": 13, "text": "add r6,r2,r0"}
+  ],
+  "memory": [
+    {"address": 0, "value": 4},
+    {"address": 4, "value": 1}
+  ]
+}
