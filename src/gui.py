@@ -42,7 +42,7 @@ def _make_table(headers: list[str]) -> QTableWidget:
     return t
 
 
-# ── main window ──────────────────────────────────────────────────────────────
+# ── main window ───────────────────────────────────────────────────────────
 class FemTomasGUI(QMainWindow):
 
     def __init__(self):
