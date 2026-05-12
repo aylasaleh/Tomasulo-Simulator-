@@ -5,12 +5,12 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QTextEdit, QTableWidget, QTableWidgetItem,
     QTabWidget, QSplitter, QGroupBox, QGridLayout, QHeaderView,
-    QFileDialog, QMessageBox, QFrame, QSizePolicy,
+    QFileDialog, QMessageBox, QFrame, QSizePolicy, QSpinBox,
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor
 
-from parser import parse_program
+from parser import parse_program, parse_assembly
 from simulator import Simulator
 
 
@@ -130,18 +130,35 @@ class FemTomasGUI(QMainWindow):
         self.txt_json.setMinimumHeight(160)
         self.txt_json.setMaximumHeight(220)
         self.txt_json.setPlaceholderText(
+            '# Assembly format (one instruction per line):\n'
+            'add r1,r0,r0\n'
+            'add r2,r0,r1\n'
+            'store r2,0(r1)\n'
+            'load r3,0(r1)\n'
+            '\n'
+            '# Or JSON format:\n'
             '{\n'
             '  "instructions": [\n'
-            '    {"pc": 0, "text": "ADD r1, r2, r3"},\n'
-            '    {"pc": 1, "text": "MUL r4, r1, r2"}\n'
-            '  ],\n'
-            '  "memory": [\n'
-            '    {"address": 100, "value": 42}\n'
+            '    {"pc": 1, "text": "add r1,r0,r0"}\n'
             '  ]\n'
             '}'
         )
         gi.addWidget(self.txt_json)
         lay.addWidget(grp_input)
+
+        # Starting PC input
+        grp_pc = QGroupBox("Starting PC")
+        gpc = QHBoxLayout(grp_pc)
+        gpc.setSpacing(6)
+        gpc.setContentsMargins(6, 6, 6, 6)
+        self.spn_start_pc = QSpinBox()
+        self.spn_start_pc.setMinimum(0)
+        self.spn_start_pc.setMaximum(65535)
+        self.spn_start_pc.setValue(1)
+        gpc.addWidget(QLabel("PC:"))
+        gpc.addWidget(self.spn_start_pc)
+        gpc.addStretch()
+        lay.addWidget(grp_pc)
 
         # Instruction timing table
         grp_timing = QGroupBox("Instruction Timing Table")
@@ -240,24 +257,32 @@ class FemTomasGUI(QMainWindow):
     def _load_from_text(self):
         text = self.txt_json.toPlainText().strip()
         if not text:
-            self._status("⚠  Editor is empty — paste JSON or open a file.")
+            self._status("⚠  Editor is empty — paste JSON or assembly code, then click Parse.")
             return
         try:
-            payload = json.loads(text)
-            instrs, mem_init = parse_program(payload)
-            self._raw_payload = payload
+            # Try JSON format first
+            try:
+                payload = json.loads(text)
+                instrs, mem_init = parse_program(payload)
+                self._raw_payload = payload
+                format_type = "JSON"
+            except json.JSONDecodeError:
+                # Fall back to assembly format with starting PC
+                start_pc = self.spn_start_pc.value()
+                instrs, mem_init = parse_assembly(text, start_pc)
+                self._raw_payload = None
+                format_type = "Assembly"
+            
             self.sim = Simulator(instrs, mem_init)
             n = len(instrs)
             self.btn_step.setEnabled(True)
             self.btn_run.setEnabled(True)
             self.btn_reset.setEnabled(True)
-            self._status(f"✅  Loaded {n} instruction{'s' if n != 1 else ''}. "
+            self._status(f"✅  Loaded {n} instruction{'s' if n != 1 else ''} ({format_type}). "
                          "Press  Step  to advance one cycle, or  Run  to animate.")
             self._refresh_all()
-        except json.JSONDecodeError as e:
-            QMessageBox.critical(self, "JSON Parse Error", str(e))
         except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
+            QMessageBox.critical(self, "Parse Error", str(e))
 
     def _do_step(self):
         if self.sim is None or self.sim.is_done():

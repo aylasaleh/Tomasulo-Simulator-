@@ -115,3 +115,31 @@ def parse_program(payload: Dict[str, Any]) -> Tuple[List[Instruction], Dict[int,
         memory_init[address] = value
 
     return instructions, memory_init
+
+
+def parse_assembly(code: str, start_pc: int = 1) -> Tuple[List[Instruction], Dict[int, int]]:
+    """
+    Parse assembly code format where each line is an instruction.
+    Lines are automatically numbered starting from start_pc.
+    Empty lines and lines starting with '#' are comments/skipped.
+    Returns (instructions, memory_init) tuple.
+    """
+    instructions = []
+    pc = start_pc
+    
+    for line in code.split('\n'):
+        line = line.strip()
+        
+        # Skip empty lines and comments
+        if not line or line.startswith('#'):
+            continue
+        
+        # Parse the instruction with auto-assigned PC
+        try:
+            instructions.append(parse_instruction_line(pc, line))
+            pc += 1
+        except ValueError as e:
+            raise ValueError(f"Error on line {pc}: {e}")
+    
+    # Memory is always empty for assembly format
+    return instructions, {}

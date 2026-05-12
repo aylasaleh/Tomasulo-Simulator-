@@ -33,7 +33,7 @@ class SimulatorSampleTests(unittest.TestCase):
 
     def test_branch_taken_misprediction(self):
         sim, instructions = load_sample("branch_taken.json")
-        self.assertEqual(sim.cycle, 12)
+        self.assertEqual(sim.cycle, 11)
         self.assertEqual(sim.completed_count, 4)
         self.assertEqual(sim.branch_count, 1)
         self.assertEqual(sim.mispredictions, 1)
@@ -42,14 +42,14 @@ class SimulatorSampleTests(unittest.TestCase):
 
     def test_load_store_hazard(self):
         sim, instructions = load_sample("load_store_hazard.json")
-        self.assertEqual(sim.cycle, 25)
+        self.assertEqual(sim.cycle, 21)
         self.assertEqual(sim.completed_count, 5)
         self.assertEqual(sim.branch_count, 0)
         self.assertEqual(sim.mispredictions, 0)
         load_instr = next(instr for instr in instructions if instr.pc == 4)
         store_instr = next(instr for instr in instructions if instr.pc == 3)
-        self.assertEqual(store_instr.finish_cycle, 16)
-        self.assertEqual(load_instr.start_cycle, 16)
+        self.assertEqual(store_instr.finish_cycle, 14)
+        self.assertEqual(load_instr.start_cycle, 14)
 
     def test_three_iteration_loop(self):
         sim, instructions = load_sample("loop_three_times.json")
@@ -71,8 +71,8 @@ class SimulatorSampleTests(unittest.TestCase):
 
     def test_loop_with_waw_war_hazards(self):
         sim, instructions = load_sample("loop_hazards.json")
-        self.assertEqual(sim.cycle, 54)
-        self.assertEqual(sim.completed_count, 29)
+        self.assertEqual(sim.cycle, 42)
+        self.assertEqual(sim.completed_count, 27)
         self.assertEqual(sim.branch_count, 9)
         self.assertEqual(sim.mispredictions, 5)
 

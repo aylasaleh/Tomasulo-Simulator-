@@ -19,7 +19,6 @@ class Simulator:
         self.completed_count = 0
         self.branch_count = 0
         self.mispredictions = 0
-        self.block_start_issue = False
         self.call_stack: List[int] = []
 
     def step(self) -> bool:
@@ -36,15 +35,10 @@ class Simulator:
         finished = self.advance_execution()
         self.process_finished_execution(finished)
 
-        # 3. Handle control hazard blocking
-        if self.block_start_issue:
-            self.block_start_issue = False
-            return True
-
-        # 4. Start execution for ready instructions
+        # 3. Start execution for ready instructions
         self.start_ready_executions()
 
-        # 5. Issue stage
+        # 4. Issue stage
         self.issue_instruction()
 
         return True
@@ -65,8 +59,6 @@ class Simulator:
             slot.instruction.completed = True
             slot.instruction.write_cycle = self.cycle
             slot.instruction.trace.append(("write", self.cycle))
-            if was_control:
-                self.block_start_issue = True
 
     # computes targets for any branches/jumps and broadcasts results if needed and writes to registers
     def perform_write(self, slot: ReservationStationSlot) -> None:
@@ -108,24 +100,11 @@ class Simulator:
             if not slot.busy or slot.stage != "EXECUTE":
                 continue
 
-            # handle address computation for memory operations (2 cycles)
-            if self.is_memory_slot(slot) and slot.address is None:
-                if slot.addr_comp_cycles_remaining is not None and slot.addr_comp_cycles_remaining > 0:
-                    slot.addr_comp_cycles_remaining -= 1
-                    slot.rem_cycles -= 1
-                    continue
-                elif slot.addr_comp_cycles_remaining == 0:
-                    self.compute_effective_address(slot)
-                    slot.addr_comp_cycles_remaining = None
-
-            # check if memory operation can proceed (no conflicts)
-            if self.is_memory_slot(slot) and slot.address is not None and not self.can_start_memory_operation(slot):
-                continue
-
-            if slot.rem_cycles == 0:
+            if slot.rem_cycles == 1:
                 if not self.is_store_slot(slot) and not self.is_control_slot(slot):
                     slot.value = self.compute_result(slot)
                 slot.stage = "WRITE"
+                slot.rem_cycles = 0
                 slot.instruction.finish_cycle = self.cycle
                 slot.instruction.trace.append(("finish", self.cycle))
                 finished.append(slot)
@@ -149,6 +128,20 @@ class Simulator:
                 self.cleanup_slot(slot)
 
     def start_ready_executions(self) -> None:
+        # First, advance address computation for all ISSUE-stage memory operations
+        for slot in self.get_all_slots():
+            if not slot.busy or slot.stage != "ISSUE" or not self.is_memory_slot(slot):
+                continue
+            
+            # Advance address computation counter
+            if slot.addr_comp_cycles_remaining is not None and slot.addr_comp_cycles_remaining > 0:
+                slot.addr_comp_cycles_remaining -= 1
+                slot.rem_cycles -= 1
+                # When address computation completes, compute the effective address
+                if slot.addr_comp_cycles_remaining == 0:
+                    self.compute_effective_address(slot)
+        
+        # Now check which instructions can move to EXECUTE
         for slot in self.get_all_slots():
             if not slot.busy or slot.stage != "ISSUE":
                 continue
@@ -160,21 +153,17 @@ class Simulator:
                 continue
 
             if self.is_memory_slot(slot):
+                # Memory ops must have finished address computation
                 if slot.address is None:
-                    if not self.can_compute_address(slot):
-                        continue
-                    if slot.instruction.is_load and self.has_older_store(slot):
-                        continue
-                elif not self.can_start_memory_operation(slot):
+                    # Still computing address, not ready for execution
+                    continue
+                # Address is computed, check if can proceed to memory execution
+                if not self.can_start_memory_operation(slot):
                     continue
 
             slot.stage = "EXECUTE"
             slot.instruction.start_cycle = self.cycle
             slot.instruction.trace.append(("start", self.cycle))
-            
-            # Initialize address computation cycles for memory operations
-            if self.is_memory_slot(slot):
-                slot.addr_comp_cycles_remaining = 2
     #!SECTION
 
     #SECTION ISSUE STAGE
@@ -204,8 +193,12 @@ class Simulator:
             slot.stage = "ISSUE"
             slot.instruction.issued_cycle = self.cycle
             slot.instruction.trace.append(("issued", self.cycle))
-            slot.rem_cycles = FU_LATENCY[fu_type] - 1
+            slot.rem_cycles = FU_LATENCY[fu_type]
             slot.immediate = instr.immediate
+
+            # For memory operations, immediately start address computation (2 cycles)
+            if instr.is_memory:
+                slot.addr_comp_cycles_remaining = 2
 
             self.populate_operand_tags(slot)
             if instr.has_dest() and slot.name is not None:
