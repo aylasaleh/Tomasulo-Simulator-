@@ -22,26 +22,37 @@ class Simulator:
         self.block_start_issue = False
         self.call_stack: List[int] = []
 
+    def step(self) -> bool:
+        """Execute one simulation cycle. Returns False if the simulation is finished."""
+        if self.is_done():
+            return False
+
+        self.cycle += 1
+
+        # 1. Write stage (Broadcasting results)
+        self.complete_write_stage()
+
+        # 2. Execution stage (Advancing timers and processing finishes)
+        finished = self.advance_execution()
+        self.process_finished_execution(finished)
+
+        # 3. Handle control hazard blocking
+        if self.block_start_issue:
+            self.block_start_issue = False
+            return True
+
+        # 4. Start execution for ready instructions
+        self.start_ready_executions()
+
+        # 5. Issue stage
+        self.issue_instruction()
+
+        return True
+
     def run(self) -> None:
-        while not self.is_done():
-            self.cycle += 1
-
-            # write first
-            self.complete_write_stage()
-
-            # Execute next
-            finished = self.advance_execution()
-            self.process_finished_execution(finished)
-
-            #in case of branching don't start new instructions until next cycle to simplify handling of control hazards
-            if self.block_start_issue:
-                self.block_start_issue = False
-                continue
-
-            self.start_ready_executions()
-
-            # issue next
-            self.issue_instruction()
+        """Runs the simulation until completion."""
+        while self.step():
+            pass
 
     #SECTION WRITE STAGE
     def complete_write_stage(self) -> None:
